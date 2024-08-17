@@ -1,125 +1,102 @@
-require 'json'
 require 'openai'
-require 'fileutils'
 
 class VectorService
-  def initialize(api_key:, cache_file: 'storage/embeddings_cache.json')
+  def initialize(api_key:, vector_store_id: 'vs_EGqkgjFL7TcoAZfr6SLLlJMM')
     @openai_client = OpenAI::Client.new(access_token: api_key)
-    @cache_file = cache_file
-    load_cache
+    @vector_store_id = vector_store_id # ID of the new vector store
   end
 
-  # Load the cache from the file
-  def load_cache
-    if File.exist?(@cache_file)
-      @embeddings_cache = JSON.parse(File.read(@cache_file))
-      puts "Loaded existing cache from #{@cache_file}"
-    else
-      @embeddings_cache = {}
-    end
-  end
+  # Create an assistant using the vector store
+  def create_assistant
+    puts "Creating assistant to use vector store #{@vector_store_id}..."
 
-  # Save the cache to the file
-  def save_cache
-    FileUtils.mkdir_p(File.dirname(@cache_file)) # Ensure directory exists
-    File.open(@cache_file, 'w') do |f|
-      f.write(JSON.pretty_generate(@embeddings_cache))
-    end
-    puts "Cache saved to #{@cache_file}"
-  end
-
-  # Embed and clean multiple fields from the JSON data
-  def clean_and_embed_data(json_data)
-    json_data.map do |item|
-      combined_text = [
-        item['_source']['complaint_what_happened'],
-        item['_source']['issue'],
-        item['_source']['sub_product']
-      ].compact.join(' ')
-
-      embedding = get_embeddings([combined_text]).first
-
-      {
-        id: item['_id'] || SecureRandom.uuid,
-        text: combined_text,
-        embedding: embedding,
-        category: item['_source']['issue']
+    response = @openai_client.assistants.create(
+      parameters: {
+        model: "gpt-4o",
+        name: "Complaint Search Assistant",
+        description: "An assistant to search and retrieve the most relevant complaints.",
+        instructions: "You are a bot that searches a vector store and returns the most relevant complaints based on the query provided.",
+        tools: [
+          { type: "file_search" }
+        ],
+        tool_resources: {
+          file_search: {
+            vector_store_ids: [@vector_store_id] # The vector store ID is passed here
+          }
+        },
+        metadata: { my_internal_version_id: "1.0.0" }
       }
-    end.compact
+    )
+
+    assistant_id = response["id"]
+    puts "Assistant created with ID: #{assistant_id}"
+    assistant_id
   end
 
-  # Retrieves embeddings from the cache or generates them using OpenAI's API
-  def get_embeddings(texts)
-    texts.map do |text|
-      if @embeddings_cache.key?(text)
-        @embeddings_cache[text]
+  # Search for the most similar complaints using the assistant
+  def search_vector_store_with_assistant(query, top_k = 5)
+    assistant_id = create_assistant
+
+    puts "Creating thread for assistant with ID #{assistant_id}..."
+
+    # Create a thread
+    thread_response = @openai_client.threads.create()
+    thread_id = thread_response["id"]
+    puts "Thread created with ID: #{thread_id}"
+
+    # Add initial message from user
+    message_response = @openai_client.messages.create(
+      thread_id: thread_id,
+      parameters: {
+        role: "user",
+        content: query
+      }
+    )
+    message_id = message_response["id"]
+    puts "Message added with ID: #{message_id}"
+
+    # Log the thread ID for debugging purposes
+    puts "Thread ID: #{thread_id}"
+
+    # Retrieve the response message (optional)
+    puts "Retrieving the response message..."
+    response_message = @openai_client.messages.retrieve(thread_id: thread_id, id: message_id)
+    puts "Response message: #{response_message['content']}"
+
+    # Create a run using the assistant with the thread
+    puts "Creating a run using the assistant..."
+    run_response = @openai_client.runs.create(
+      thread_id: thread_id,
+      parameters: {
+        assistant_id: assistant_id,
+        max_prompt_tokens: 256,
+        max_completion_tokens: 16,
+      }
+    )
+
+    run_id = run_response['id']
+    puts "run ID: #{run_id}"
+    while true do
+      response = @openai_client.runs.retrieve(id: run_id, thread_id: thread_id)
+      status = response['status']
+  
+      case status
+      when 'queued', 'in_progress', 'cancelling'
+        puts 'Sleeping'
+        sleep 1 # Wait one second and poll again
+      when 'completed'
+        break # Exit loop and report result to user
+      when 'requires_action'
+        # Handle tool calls (see below)
+      when 'cancelled', 'failed', 'expired'
+        puts response['last_error'].inspect
+        break # or `exit`
       else
-        response = @openai_client.embeddings(
-          parameters: { model: "text-embedding-3-small", input: [text] }
-        )
-        embedding = response['data'].first['embedding']
-        @embeddings_cache[text] = embedding # Save to in-memory cache
-        embedding
+        puts "Unknown status response: #{status}"
       end
-    end.compact
-  end
-
-  # Save embeddings to a local JSON file
-  def save_embeddings_to_file(file_path, cleaned_data)
-    File.open(file_path, 'w') do |f|
-      f.write(JSON.pretty_generate(cleaned_data))
     end
-    puts "Embeddings saved to #{file_path}"
-  end
-
-  # Upload the JSON file containing embeddings to OpenAI's Files API
-  def upload_file(file_path)
-    file = File.open(file_path)
-    response = @openai_client.files.upload(
-      parameters: {
-        purpose: "assistants", # Use a relevant purpose
-        file: file
-      }
-    )
-    file.close
-    puts "File uploaded with ID: #{response['id']}"
-    response['id']
-  end
-
-  # Create a vector store from the uploaded file IDs
-  def create_vector_store(vector_store_name, file_ids)
-    response = @openai_client.vector_stores.create(
-      parameters: {
-        name: vector_store_name,
-        file_ids: file_ids
-      }
-    )
-    puts "Vector store created with ID: #{response['id']}"
-    response
-  end
-
-  # Full process from JSON to vector store
-  def process_and_upload_to_vector_store(json_data, vector_store_name)
-    cleaned_data = clean_and_embed_data(json_data)
-    output_file_path = 'storage/processed_embeddings.json'
-    save_embeddings_to_file(output_file_path, cleaned_data)
-    save_cache
-
-    file_id = upload_file(output_file_path)
-
-    create_vector_store(vector_store_name, [file_id])
-  end
-
-  # Search for the most similar complaints using the vector store
-  def search_vector_store(query, top_k = 5)
-    query_embedding = get_embeddings([query]).first
-
-    search_results = @vector_store.query(
-      embedding: query_embedding,
-      top_k: top_k
-    )
-    
-    puts "Search results: #{search_results}"
-    search_results
+   # Either retrieve all messages in bulk again, or...
+    messages = @openai_client.messages.list(thread_id: thread_id, parameters: { order: 'asc' })
+    puts messages
   end
 end
