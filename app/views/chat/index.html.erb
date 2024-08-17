@@ -62,6 +62,12 @@
           <input type="text" id="chat-input" name="message" class="input input-bordered flex-1 rounded-l-lg" placeholder="Type a message...">
           <%= hidden_field_tag(:assistant_id, @assistant&.assistant_id) %>
           <%= hidden_field_tag(:thread_id, @thread&.thread_id) %>
+
+          <!-- Add voice capture button -->
+          <button type="button" id="voice-capture-button" class="btn btn-secondary rounded-r-none">
+            🎤
+          </button>
+
           <button type="submit" class="btn btn-primary rounded-r-lg">Send</button>
         <% end if @assistant.present? && @thread.present? %> 
       </footer>
