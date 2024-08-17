@@ -4,6 +4,9 @@
 # or operating system, you probably want to add a global ignore instead:
 #   git config --global core.excludesfile '~/.gitignore_global'
 
+# exclude env
+.env
+
 # Ignore bundler config.
 /.bundle
 
@@ -35,3 +38,6 @@
 /config/master.key
 
 dump.rdb
+
+/app/assets/builds/*
+!/app/assets/builds/.keep
