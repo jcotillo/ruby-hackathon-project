@@ -2,15 +2,15 @@ require 'openai'
 
 class AssistantRouter
   ASSISTANT_TYPES = {
-    text: ['txt', 'md', 'doc', 'docx'],
-    image: ['jpg', 'jpeg', 'png', 'gif'],
-    audio: ['mp3', 'wav', 'ogg']
+    text: ['txt', 'md', 'doc', 'pdf', 'docx'],
+    image: ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp'],
+    audio: ['flac', 'm4a', 'mp3', 'mp4', 'mpeg', 'mpga', 'oga', 'ogg', 'wav', 'webm']
   }
 
   def initialize
     api_key = ENV['OPENAI_ACCESS_TOKEN']
     raise "OPENAI_ACCESS_TOKEN environment variable is not set" if api_key.nil? || api_key.empty?
-    
+
     @client = OpenAI::Client.new(access_token: api_key)
     @assistants = {}
     load_assistants
@@ -61,14 +61,14 @@ class AssistantRouter
 
   def process_with_assistant(assistant_type, content)
     assistant_id = @assistants[assistant_type.to_s]
-    
+
     thread = @client.threads.create
     message = @client.messages.create(
       thread_id: thread.id,
       role: 'user',
       content: content
     )
-    
+
     run = @client.runs.create(
       thread_id: thread.id,
       assistant_id: assistant_id
@@ -83,7 +83,7 @@ class AssistantRouter
     if run.status == 'completed'
       messages = @client.messages.list(thread_id: thread.id)
       assistant_message = messages.data.find { |msg| msg.role == 'assistant' }
-      
+
       {
         assistant_type: assistant_type,
         assistant_id: assistant_id,

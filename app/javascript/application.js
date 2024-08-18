@@ -58,25 +58,25 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   // Check if attachmentButton exists before adding event listeners
-  if (attachmentButton) {
-    attachmentButton.addEventListener("click", () => {
-      if (fileInput) {
-        fileInput.click(); // Trigger the file input dialog
-      } else {
-        console.warn("File input element not found.");
-      }
-    });
+  // if (attachmentButton) {
+  //   attachmentButton.addEventListener("click", () => {
+  //     if (fileInput) {
+  //       fileInput.click(); // Trigger the file input dialog
+  //     } else {
+  //       console.warn("File input element not found.");
+  //     }
+  //   });
 
-    if (fileInput) {
-      fileInput.addEventListener("change", (event) => {
-        const file = event.target.files[0];
-        if (file) {
-          console.log("File selected:", file.name);
-          chatInput.value = `Attachment: ${file.name}`; // Insert the filename into the chat input
-        }
-      });
-    }
-  } else {
-    console.warn("Attachment button not found.");
-  }
+  // if (fileInput) {
+  //   fileInput.addEventListener("change", (event) => {
+  //     const file = event.target.files[0];
+  //     if (file) {
+  //       console.log("File selected:", file.name);
+  //       chatInput.value = `Attachment: ${file.name}`; // Insert the filename into the chat input
+  //     }
+  //   });
+  // }
+  // } else {
+  //   console.warn("Attachment button not found.");
+  // }
 });

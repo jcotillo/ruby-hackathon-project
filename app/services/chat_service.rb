@@ -100,4 +100,52 @@ class ChatService
   def delete_assistant(assistant_id)
     @client.assistants.delete(id: assistant_id)
   end
+
+  def handle_text_file(file)
+    # Logic for handling text files
+  end
+
+  def handle_image_file(file)
+    # Logic for handling image files
+  end
+
+  def handle_audio_file(file)
+    # Step 1: Save the file locally or to a cloud storage service
+    file_path = save_file(file)
+
+    # Step 2: Transcribe the audio to text using an external service (e.g., Whisper, Google Cloud Speech-to-Text)
+    transcription = transcribe_audio(file_path)  # Pass the correct file path
+
+    # Optionally, delete the file after processing
+    File.delete(file_path) if File.exist?(file_path)
+
+    print(transcription)
+    transcription
+  end
+
+  def save_file(file)
+    # Save the uploaded file to a temporary location
+    file_path = Rails.root.join('tmp', 'storage', file.original_filename)
+    puts(file_path)
+    File.open(file_path, 'wb') do |f|
+      f.write(file.read)
+    end
+    file_path
+  end
+
+  def transcribe_audio(file_path)
+    # Here you could integrate with a service like OpenAI's Whisper or Google Cloud Speech-to-Text
+    client = OpenAI::Client.new
+    response = client.audio.transcribe(
+      parameters: {
+        model: "whisper-1",
+        file: File.open(file_path, "rb"),  # Ensure the file is opened in binary mode
+        response_format: "text"
+      }
+    )
+    response['text']
+  rescue StandardError => e
+    Rails.logger.error("Failed to transcribe audio: #{e.message}")
+    "Transcription failed."
+  end
 end
