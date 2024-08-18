@@ -26,13 +26,29 @@ class ChatController < ApplicationController
     def create
       if params[:file]
         file = params[:file]
-        transcription = @chat_service.handle_audio_file(file)
+        file_extension = File.extname(file.original_filename).delete('.').downcase
 
-        # Use the transcription as the message if it is not empty or nil
-        if transcription.present?
-          @chat_service.create_message(params[:thread_id], transcription)
+        case file_extension
+        when 'mp3', 'wav', 'ogg'
+          # Handle audio files
+          transcription = @chat_service.handle_audio_file(file)
+          if transcription.present?
+            @chat_service.create_message(params[:thread_id], transcription)
+          else
+            flash[:error] = "Transcription failed or returned an empty result."
+            redirect_back fallback_location: chat_index_path and return
+          end
+        when 'txt', 'md', 'doc', 'docx', 'pdf'
+          # Handle text files
+          text_content = @chat_service.handle_text_file(file)
+          if text_content.present?
+            @chat_service.create_message(params[:thread_id], text_content)
+          else
+            flash[:error] = "Text processing failed or returned an empty result."
+            redirect_back fallback_location: chat_index_path and return
+          end
         else
-          flash[:error] = "Transcription failed or returned an empty result."
+          flash[:error] = "Unsupported file type: #{file_extension}"
           redirect_back fallback_location: chat_index_path and return
         end
       elsif params[:message].present?

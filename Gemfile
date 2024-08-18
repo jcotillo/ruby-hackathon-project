@@ -88,3 +88,4 @@ end
 
 gem 'faraday'
 gem 'rack-cors'
+gem 'pdf-reader'

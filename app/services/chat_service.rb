@@ -67,6 +67,10 @@ class ChatService
         sleep 1
       when 'completed'
         return true
+      when 'incomplete'
+        Rails.logger.warn("The operation did not complete successfully. Status: #{status}")
+        # Handle the incomplete status (e.g., retry the operation or log an error)
+        return false
       when 'requires_action'
         return false
       when 'cancelled', 'failed', 'expired'
@@ -102,7 +106,35 @@ class ChatService
   end
 
   def handle_text_file(file)
-    # Logic for handling text files
+    # Step 1: Save the file locally or to a cloud storage service
+    file_path = save_file(file)
+
+    # Step 2: Extract text from the file
+    content = extract_text_from_file(file_path)
+
+    content
+  end
+
+  private
+
+  def extract_text_from_file(file_path)
+    case File.extname(file_path).downcase
+    when '.pdf'
+      extract_text_from_pdf(file_path)
+    # Add more cases here if you want to support other file types like docx, etc.
+    else
+      File.read(file_path) # For plain text files
+    end
+  end
+
+  def extract_text_from_pdf(file_path)
+    require 'pdf-reader'
+
+    reader = PDF::Reader.new(file_path)
+    reader.pages.map(&:text).join("\n")
+  rescue StandardError => e
+    Rails.logger.error("Failed to extract text from PDF: #{e.message}")
+    "Text extraction failed."
   end
 
   def handle_image_file(file)
