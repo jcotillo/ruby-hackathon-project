@@ -1,0 +1,81 @@
+<% if user_signed_in? %>
+  <div class="flex flex-col lg:flex-row h-[80vh]">
+    <!-- Left Sidebar (Assistant Menu and Side Menu) -->
+    <div class="flex flex-row lg:w-4/4 w-[80vw]">
+      <%= render 'chat/assistantsmenu' %> 
+      <%= render 'chat/sidemenu' %> 
+
+    </div>
+
+    <!-- Main Chat Area -->
+    <div class="flex flex-col lg:flex-col h-[80vh] w-[80vw]">
+      <!-- Header -->
+      <header class="p-4 bg-base-100 shadow-md flex justify-center items-center">
+        <h2 class="text-xl font-bold text-center lg:text-left">
+          <%= @thread&.name %>
+        </h2>
+      </header>
+
+      <!-- Chat Messages -->
+      <main class="flex-1 p-4 overflow-y-auto bg-base-200">
+        <div script="scrollBottom" id="chat-window" class="bg-base-100 p-4 shadow-md rounded-lg h-full overflow-y-auto">
+          <!-- Chat messages will appear here -->
+          <% if @messages.present? %>
+            <% @messages.each do |message| %>
+              <% if message["role"] == "assistant" %>
+                <% assistant = @assistants.find { |a| a.assistant_id == message["assistant_id"] } %>
+                <div class="chat chat-start mb-4">
+                  
+                    <div class="chat-image avatar placeholder">
+                      <div class="bg-neutral-focus text-neutral-content rounded-full w-10">
+                        <span class="text-sm"><%= assistant&.name ? assistant.name[0] : 'A' %></span>
+                      </div>
+                    </div>
+
+                  <div class="chat-bubble chat-bubble-primary">
+                    <p class="text-sm">
+                      <% message['content'].each do |content| %>
+                        <%= content.dig('text', 'value') %>
+                      <% end %>
+                    </p>
+                  </div>
+                </div>
+              <% else %>
+                <div class="chat chat-end mb-4">
+                  <div class="chat-bubble chat-bubble-info">
+                    <p class="text-sm">
+                      <% message['content'].each do |content| %>
+                        <%= content.dig('text', 'value') %>
+                      <% end %>
+                    </p>
+                  </div>
+                </div>
+              <% end %>
+            <% end %>
+          <% end %>
+        </div>
+      </main>
+
+      <!-- Footer/Input Form -->
+      <footer class="p-4 bg-base-100 shadow-md flex">
+        <%= form_with url: chat_index_path, method: :post, local: true, id: "chat-form", class: "flex w-full" do %>
+          <input type="text" id="chat-input" name="message" class="input input-bordered flex-1 rounded-l-lg" placeholder="Type a message...">
+          <%= hidden_field_tag(:assistant_id, @assistant&.assistant_id) %>
+          <%= hidden_field_tag(:thread_id, @thread&.thread_id) %>
+          <button type="submit" class="btn btn-primary rounded-r-lg">Send</button>
+        <% end if @assistant.present? && @thread.present? %> 
+      </footer>
+    </div>
+  </div>
+<% else %>
+  <div class="flex h-screen justify-center items-center">
+    <p class="text-xl">Please sign in to access the chat dashboard.</p>
+  </div>
+<% end %>
+
+<script>
+  window.onload = scrollBottom;
+  function scrollBottom() { 
+    document.getElementById('chat-window').scrollTop = document.getElementById('chat-window').scrollHeight
+  }
+</script>

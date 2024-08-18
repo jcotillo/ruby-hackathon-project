@@ -1,0 +1,71 @@
+<!-- app/views/dashboard/chat/_sidemenu.html.erb -->
+<div class="w-1/4 bg-gray-800 text-white h-full p-4 flex flex-col justify-between">
+  <div>
+    <div class="flex-grow items-center mb-8 text-center">
+      <span class="text-2xl font-bold">All Complaints</span>
+    </div>
+    <nav class="scrollable-content h-[60vh]">
+      <ul>
+            <% @ai_threads.each do |thread| %>
+              <li class="mb-2">
+                <div class="flex justify-between items-center" id='thread-<%= thread.id %>'>
+                  <a href="<%= chat_index_path(assistant_id: @assistant&.assistant_id, thread_id: thread.thread_id) %>" class="hover:underline w-[180px] trucate"><%= thread.name %></a>
+                  <details class="dropdown dropdown-end">
+                    <summary class="inline-flex items-center p-2 text-sm font-medium text-center text-gray-900 bg-white rounded-lg hover:bg-gray-100 focus:ring-4 focus:outline-none dark:text-white focus:ring-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-600">
+                      <svg class="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 3">
+                        <path d="M2 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm6.041 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM14 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Z"/>
+                      </svg>
+                    </summary>
+                    <ul class="bg-white text-black dropdown-content menu z-[1] w-52 rounded-box bg-base-100 shadow">
+                      <li>
+                        <button onclick="showform('<%= thread.id %>')">Edit</button>
+                      </li>
+                      <li>
+                        <%= button_to "Destroy", thread, method: :delete %>
+                      </li>
+                    </ul>
+                  </details>
+                </div>
+
+                <div id="thread-<%= thread.id %>-form" style="display: none;">
+                  <%= form_with(model: thread, class: "contents") do |f| %>
+                    <%= f.text_field :name, class: "text-black shadow rounded-md border border-gray-400 outline-none px-3 py-2 mt-2" %>
+                    <%= f.submit "Submit" %>
+                  <% end %>
+                </div>
+              </li>
+            <% end %>
+      </ul>
+    </nav>
+  </div>
+  <%= link_to 'Open New Complaint', ai_threads_path, class:"bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded", data: { turbo_method: "post" } %>
+  <div class="mt-auto bottom-4 left-4 flex items-center">
+    <%
+=begin%>
+ <img src="<%= image_path('pet_empire_logo.png') %>" alt="Pet Empire" class="h-8 w-8 mr-2"> 
+<%
+=end%>
+    <%
+=begin%>
+ <span>Pet Empire</span> 
+<%
+=end%>
+  </div>
+  
+<script>
+  function showform(thread_id) {
+    let form = document.getElementById("thread-" + thread_id + "-form");
+    form.style.display = "block";
+
+    let name = document.getElementById("thread-" + thread_id);
+    name.style.display = "none";
+  }
+
+  function hideform(thread_id) {
+    let form = document.getElementById("thread-" + thread_id + "-form");
+    form.style.display = "none";
+
+    let name = document.getElementById("thread-" + thread_id);
+    name.style.display = "block";
+  }
+</script>

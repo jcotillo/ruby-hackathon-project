@@ -1,0 +1,9 @@
+<div class="flex flex-col">
+  <% @assistants.each do |assistant| %>
+    <%= link_to chat_index_path(assistant_id: assistant.assistant_id, thread_id: @thread&.thread_id), class: "text-gray-700 hover:text-blue-500 p-2 flex items-center" do %>
+        <div class="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center mr-3">
+          <span class="text-sm text-gray-500">No Image</span>
+        </div>
+    <% end %>
+  <% end %>
+</div>
