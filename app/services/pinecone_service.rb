@@ -12,7 +12,7 @@ class PineconeService
       conn.headers['Content-Type'] = 'application/json'
       conn.adapter Faraday.default_adapter
     end
-    @openai_client = OpenAI::Client.new(access_token: ENV['OPENAI_API_KEY'])
+    @openai_client = OpenAI::Client.new(access_token: ENV['OPENAI_ACCESS_TOKEN'])
   end 
 
   # Extract and clean the "complaint_what_happened" field from the JSON data

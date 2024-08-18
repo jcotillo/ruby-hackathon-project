@@ -18,5 +18,8 @@ module CodespacesTryRails
     #
     # config.time_zone = "Central Time (US & Canada)"
     # config.eager_load_paths << Rails.root.join("extras")
+    
+    # # Allow requests from GitHub Codespaces
+    config.hosts << /.*\.app\.github\.dev/
   end
 end
