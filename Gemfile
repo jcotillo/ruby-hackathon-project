@@ -86,5 +86,4 @@ group :test do
   gem "webdrivers"
 end
 
-gem "ruby-openai"
 gem 'faraday'
