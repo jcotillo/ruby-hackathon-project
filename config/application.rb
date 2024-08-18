@@ -21,8 +21,5 @@ module CodespacesTryRails
     
     # # Allow requests from GitHub Codespaces
     config.hosts << /.*\.app\.github\.dev/
-
-    # Disable CSRF protection for API requests
-    config.action_controller.allow_forgery_protection = false
   end
 end
