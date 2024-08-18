@@ -1,31 +1,17 @@
 {
-  "image": "mcr.microsoft.com/devcontainers/ruby:3",
-  "hostRequirements": {
-    "cpus": 4
-  },
-  "waitFor": "onCreateCommand",
-  "updateContentCommand": "bundle install",
-  "postCreateCommand": "",
-  "postAttachCommand": {
-    "server": "rails server"
-  },
-  "customizations": {
-    "codespaces": {
-      "openFiles": [
-        "app/views/hello/index.html.erb"
-      ]
+    "name": "Ruby on Rails & PostgreSQL",
+    "image": "ruby:3.3.0",
+    "features": {},
+    "postCreateCommand": "apt-get update && apt-get install -y postgresql postgresql-contrib libpq-dev && gem install rails && bundle install",
+    "postAttachCommand": "bash .devcontainer/initialize.sh",
+    "customizations": {
+      "vscode": {
+        "extensions": [
+          "Shopify.ruby-lsp",
+          "ckolkman.vscode-postgres"
+        ]
+      }
     },
-    "vscode": {
-      "extensions": [
-        "Shopify.ruby-lsp"
-      ]
-    }
-  },
-  "portsAttributes": {
-    "3000": {
-      "label": "Application",
-      "onAutoForward": "openPreview"
-    }
-  },
-  "forwardPorts": [3000]
-}
+    "forwardPorts": [3000, 5432],
+    "remoteUser": "root"
+  }
