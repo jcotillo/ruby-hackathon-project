@@ -57,20 +57,36 @@ class PineconeService
     end
   end
 
-  # Searches for similar vectors in Pinecone
   def search(query)
     query_embedding = get_embeddings([query]).first
     payload = {
       vector: query_embedding,
       topK: 5,
-      includeValues: true # Include the original vectors in the search result
+      includeValues: true, # Include the original vectors in the search result
+      includeMetadata: true # Include metadata to help identify the vectors
     }
     response = @connection.post("/query", payload.to_json)
-    
+  
     if response.success?
-      JSON.parse(response.body)
+      search_results = JSON.parse(response.body)
+  
+      # Load the original JSON data to map the IDs back to the original data
+      json_file_path = Rails.root.join('storage', 'ruby_hackathon_data.json')
+      json_data = JSON.parse(File.read(json_file_path)) if File.exist?(json_file_path)
+  
+      # Enrich the search results with the actual values from the JSON data
+      enriched_matches = search_results['matches'].map do |match|
+        original_data = json_data.find { |item| item['_id'] == match['id'] }
+        {
+          id: match['id'],
+          score: match['score'],
+          original_data: original_data # Adding the original data to the match result
+        }
+      end
+  
+      { results: search_results['results'], matches: enriched_matches }
     else
       raise "Search failed: #{response.status} - #{response.body}"
     end
-  end
+  end  
 end
