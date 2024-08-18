@@ -68,6 +68,13 @@
             🎤
           </button>
 
+          <button type="button" id="attachment-button" class="btn btn-secondary rounded-r-none">
+            📎
+          </button>
+
+          <!-- Hidden file input for attachments -->
+          <input type="file" id="file-input" accept=".wav,.mp3" style="display: none;">
+
           <button type="submit" class="btn btn-primary rounded-r-lg">Send</button>
         <% end if @assistant.present? && @thread.present? %> 
       </footer>
