@@ -377,6 +377,7 @@ DEPENDENCIES
   devise
   dotenv
   erb_lint
+  faraday
   hotwire-livereload (~> 1.2)
   importmap-rails
   jbuilder

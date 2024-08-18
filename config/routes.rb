@@ -1,4 +1,7 @@
 Rails.application.routes.draw do
+  post 'vectors/create', to: 'vectors#create'
+  post 'vectors/search', to: 'vectors#search'
+
   resources :assistants
   devise_for :users
   root to: 'chat#index'
