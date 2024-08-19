@@ -1,5 +1,9 @@
 # frozen_string_literal: true
 
+require 'roo'
+require 'pdf-reader'
+require 'docx'
+
 class ChatService
   attr_accessor :client
 
@@ -48,7 +52,6 @@ class ChatService
     @client.runs.create(thread_id: t_id,
                         parameters: {
                           assistant_id: a_id,
-                          # Adjusted max prompt for longer text (extracted from documents, etc.)
                           max_prompt_tokens: 10_000,
                           max_completion_tokens: 10_000
                         })
@@ -70,7 +73,6 @@ class ChatService
         return true
       when 'incomplete'
         Rails.logger.warn("The operation did not complete successfully. Status: #{status}")
-        # Handle the incomplete status (e.g., retry the operation or log an error)
         return false
       when 'requires_action'
         return false
@@ -88,7 +90,7 @@ class ChatService
     @client.messages.create(
       thread_id:,
       parameters: {
-        role: 'user', # Required for manually created messages
+        role: 'user',
         content: message
       }
     )
@@ -107,30 +109,25 @@ class ChatService
   end
 
   def handle_text_file(file)
-    # Step 1: Save the file locally or to a cloud storage service
     file_path = save_file(file)
-
-    # Step 2: Extract text from the file
     content = extract_text_from_file(file_path)
-
     content
   end
 
-  private
-
   def extract_text_from_file(file_path)
     case File.extname(file_path).downcase
-    when '.pdf'
+    when '.pdf', '.txt'
       extract_text_from_pdf(file_path)
-    # Add more cases here if you want to support other file types like docx, etc.
+    when '.csv', '.xlsx', '.ods'
+      extract_text_from_spreadsheet(file_path)
+    when '.docx'
+      extract_text_from_docx(file_path)
     else
-      File.read(file_path) # For plain text files
+      File.read(file_path)
     end
   end
 
   def extract_text_from_pdf(file_path)
-    require 'pdf-reader'
-
     reader = PDF::Reader.new(file_path)
     reader.pages.map(&:text).join("\n")
   rescue StandardError => e
@@ -138,28 +135,47 @@ class ChatService
     "Text extraction failed."
   end
 
+  def extract_text_from_spreadsheet(file_path)
+    spreadsheet = Roo::Spreadsheet.open(file_path)
+    sheet = spreadsheet.sheet(0)
+    sheet.each_row_streaming.map do |row|
+      row.map(&:value).join(", ")
+    end.join("\n")
+  rescue StandardError => e
+    Rails.logger.error("Failed to extract text from spreadsheet: #{e.message}")
+    "Text extraction failed."
+  end
+
+  def extract_text_from_docx(file_path)
+    begin
+      unless File.exist?(file_path)
+        Rails.logger.error("File not found: #{file_path}")
+        return "Text extraction failed: file not found."
+      end
+
+      doc = Docx::Document.open(file_path)
+      text = doc.paragraphs.map(&:to_s).join("\n")
+    rescue StandardError => e
+      Rails.logger.error("Failed to open DOCX file: #{file_path}")
+      Rails.logger.error("Error details: #{e.message}")
+      text = "Text extraction failed."
+    end
+    text
+  end
+
   def handle_image_file(file)
     # Logic for handling image files
   end
 
   def handle_audio_file(file)
-    # Step 1: Save the file locally or to a cloud storage service
     file_path = save_file(file)
-
-    # Step 2: Transcribe the audio to text using an external service (e.g., Whisper, Google Cloud Speech-to-Text)
-    transcription = transcribe_audio(file_path)  # Pass the correct file path
-
-    # Optionally, delete the file after processing
+    transcription = transcribe_audio(file_path)
     File.delete(file_path) if File.exist?(file_path)
-
-    print(transcription)
     transcription
   end
 
   def save_file(file)
-    # Save the uploaded file to a temporary location
     file_path = Rails.root.join('tmp', 'storage', file.original_filename)
-    puts(file_path)
     File.open(file_path, 'wb') do |f|
       f.write(file.read)
     end
@@ -167,12 +183,11 @@ class ChatService
   end
 
   def transcribe_audio(file_path)
-    # Here you could integrate with a service like OpenAI's Whisper or Google Cloud Speech-to-Text
     client = OpenAI::Client.new
     response = client.audio.transcribe(
       parameters: {
         model: "whisper-1",
-        file: File.open(file_path, "rb"),  # Ensure the file is opened in binary mode
+        file: File.open(file_path, "rb"),
         response_format: "text"
       }
     )
