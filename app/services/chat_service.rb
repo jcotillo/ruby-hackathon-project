@@ -48,7 +48,8 @@ class ChatService
     @client.runs.create(thread_id: t_id,
                         parameters: {
                           assistant_id: a_id,
-                          max_prompt_tokens: 2000,
+                          # Adjusted max prompt for longer text (extracted from documents, etc.)
+                          max_prompt_tokens: 10_000,
                           max_completion_tokens: 10_000
                         })
   end
