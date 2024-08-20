@@ -32,13 +32,14 @@ class ChatController < ApplicationController
         when 'mp3', 'wav', 'ogg'
           # Handle audio files
           transcription = @chat_service.handle_audio_file(file)
+          puts transcription
           if transcription.present?
             @chat_service.create_message(params[:thread_id], transcription)
           else
             flash[:error] = "Transcription failed or returned an empty result."
             redirect_back fallback_location: chat_index_path and return
           end
-        when 'txt', 'md', 'doc', 'docx', 'pdf'
+        when 'txt', 'md', 'doc', 'docx', 'pdf', 'json'
           # Handle text files
           text_content = @chat_service.handle_text_file(file)
           if text_content.present?

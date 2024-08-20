@@ -90,4 +90,5 @@ gem 'faraday'
 gem 'rack-cors'
 gem 'roo'
 gem 'pdf-reader'
-gem 'docx'
+
+gem "docx", "~> 0.8.0", :require => ["docx"]

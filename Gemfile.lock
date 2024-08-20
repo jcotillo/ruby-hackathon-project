@@ -395,7 +395,7 @@ DEPENDENCIES
   capybara
   debug
   devise
-  docx
+  docx (~> 0.8.0)
   dotenv
   erb_lint
   faraday

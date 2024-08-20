@@ -153,8 +153,11 @@ class ChatService
         return "Text extraction failed: file not found."
       end
 
-      doc = Docx::Document.open(file_path)
-      text = doc.paragraphs.map(&:to_s).join("\n")
+      doc = Docx::Document.open(file_path).paragraphs.map do |v|
+        puts v
+        v.to_s
+      end.join("\n")
+      # text = doc.paragraphs.map(&:to_s).join("\n")
     rescue StandardError => e
       Rails.logger.error("Failed to open DOCX file: #{file_path}")
       Rails.logger.error("Error details: #{e.message}")
@@ -187,8 +190,7 @@ class ChatService
     response = client.audio.transcribe(
       parameters: {
         model: "whisper-1",
-        file: File.open(file_path, "rb"),
-        response_format: "text"
+        file: File.open(file_path, "rb")
       }
     )
     response['text']
