@@ -153,17 +153,17 @@ class ChatService
         return "Text extraction failed: file not found."
       end
 
-      doc = Docx::Document.open(file_path).paragraphs.map do |v|
+      doc = Docx::Document.open(file_path.to_s).paragraphs.map do |v|
         puts v
         v.to_s
       end.join("\n")
-      # text = doc.paragraphs.map(&:to_s).join("\n")
+
     rescue StandardError => e
       Rails.logger.error("Failed to open DOCX file: #{file_path}")
       Rails.logger.error("Error details: #{e.message}")
-      text = "Text extraction failed."
+      doc = "Text extraction failed."
     end
-    text
+    doc
   end
 
   def handle_image_file(file)
