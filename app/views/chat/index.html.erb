@@ -58,7 +58,7 @@
 
       <!-- Footer/Input Form -->
       <footer class="p-4 bg-base-100 shadow-md flex">
-        <%= form_with url: chat_index_path, method: :post, local: true, id: "chat-form", class: "flex w-full" do %>
+        <%= form_with url: chat_index_path, method: :post, local: true, id: "chat-form", class: "flex w-full", multipart: true do %>
           <input type="text" id="chat-input" name="message" class="input input-bordered flex-1 rounded-l-lg" placeholder="Type a message...">
           <%= hidden_field_tag(:assistant_id, @assistant&.assistant_id) %>
           <%= hidden_field_tag(:thread_id, @thread&.thread_id) %>
@@ -68,12 +68,12 @@
             🎤
           </button>
 
-          <button type="button" id="attachment-button" class="btn btn-secondary rounded-r-none">
+          <label for="file-input" type="button" id="attachment-button" class="btn btn-secondary rounded-r-none">
             📎
-          </button>
+          </label>
 
           <!-- Hidden file input for attachments -->
-          <input type="file" id="file-input" accept=".wav,.mp3" style="display: none;">
+          <input name="file" type="file" id="file-input" style="display: none;">
 
           <button type="submit" class="btn btn-primary rounded-r-lg">Send</button>
         <% end if @assistant.present? && @thread.present? %> 
